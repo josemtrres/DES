@@ -1,4 +1,58 @@
-def S (i,f,c):
+import random
+def key():
+    key = ""
+    for i in range(0,64):
+        a = random.choices([0,1])
+        key += str(a[0])
+    return key
+#Key =  key()
+
+# Funcion de expansion
+def E (R):
+    E = [   
+            32,1,2,3,4,5,
+            4,5,6,7,8,9,
+            8,9,10,11,12,13,
+            12,13,14,15,16,17,
+            16,17,18,19,20,21,
+            20,21,22,23,24,25,
+            24,25,26,27,28,29,
+            28,29,30,31,32,1
+        ]
+    
+    for x in range(0,len(E)):
+        i = E[x]
+        E[x] = R[i-1]
+    return E
+
+# Funcion XOR
+def XOR(A,B):
+    C= ""
+    for i in range (0,len(A)):
+        if A[i] == B[i]:
+            C += str(0)
+        else:
+            C += str(1)
+    return C
+
+# Funcion necesaria para obtener binarios de 4 digitos
+def ABin(Sbox):
+    tmp=""
+    for x in Sbox:
+        if len(bin(x)[2:]) < 4:
+            b = bin(x)[2:]
+            for i in range (0,4-len(bin(x)[2:])):
+                b = str(0) + b
+            tmp+=b    
+        else:
+            tmp += bin(x)[2:]
+    return tmp
+
+# Funcion S-box
+def S(xor):
+    sbox =[]
+    a = 1
+    b = 5
     S = [
             [
                 [14, 4, 13, 1, 2, 15, 11, 18, 3, 10, 6, 12, 5, 9, 0, 7],
@@ -55,20 +109,51 @@ def S (i,f,c):
                 [2, 1, 14, 7, 4, 10, 8, 13, 15, 12, 9, 0, 3, 5, 6, 11]
             ]
         ]
-    return S[i][f][c]
+    for x in range (0,8):
+        sbox.append(S[x][int(xor[x*6]+xor[(x+1)*6-1],2)][int(xor[a:b],2)])
+        a+=6
+        b+=6
+    return ABin(sbox)
 
+# Funcion de permutación de la Funcion Feistel
+def P(Sbox):
+    tmp = ""
+    p = [
+            16, 7, 20, 21, 29, 12, 28, 17,
+            1, 15, 23, 26, 5, 18, 31, 10,
+            2, 8, 24, 14,32, 27, 3, 9,
+            19, 13, 30, 6, 22, 11, 4, 25
+        ]
+    
+    for x in range(0,len(p)):
+        i = p[x]
+        p[x] = Sbox[i-1]
 
-C = '111111000000111111000000111111000000111111000000'
-a = C[6]+C[11]
-b = C[7:11]
+    for x in p:
+        tmp += str(x)
+    return tmp
 
-a = 1
-b = 5
-sbox = []
-for x in range (0,8):
-    sbox.append(S(x,int(C[x*6]+C[(x+1)*6-1],2),int(C[a:b],2)))
-    a+=6
-    b+=6
+# Funcion Feistel
+def F (R, key):
+    R_e = E(R) #expansion de R para obtener 48 bits
+    xor = XOR(R_e, key) #xor de R expandida con la key, retorna 48 bits
+    Sbox = S(xor) #Sbox que retorna 32 bits
+    f = P(Sbox) #Hace el shuffle de 32 bits
+    return f
 
-for i in sbox:
-    print(bin(i)[2:])
+tc = "0110100001100101011011000110110001101111001000000111100101101111"
+te = "0110111100100000011110010110111101000010101011001111110000101000"
+Key = '1001001110111011000110010001111111101010001100111010011100001001'
+
+# Algoritmo DES
+def DES(t, key):
+    # Se inicia dividiendo el texto de 64 bits en partes iguales
+    L = t[:32] 
+    R = t[32:]
+    # Se realiza la funcion Feistel
+    f = F(R, key)
+    xor = XOR(L, f)
+    te = R+xor
+    return te
+
+print(DES(tc,Key))
