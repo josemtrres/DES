@@ -1,32 +1,79 @@
-from hashlib import sha3_224, shake_128
 import random
+def key():
+    key = ""
+    for i in range(0,64):
+        a = random.choices([0,1])
+        key += str(a[0])
+    return key
+#Key =  key()
 
-tcp1 =  [57,49,41,33,25,17,9,
-        1,58,50,42,34,26,18,
-        10,2,59,51,43,35,27,
-        19,11,3,60,52,44,36,
-        63,55,47,39,31,23,15,
-        7,62,54,46,38,30,22,
-        14,6,61,53,45,37,29,
-        21,13,5,28,20,12,4]
+tcp1 =  [
+            57,49,41,33,25,17,9,
+            1,58,50,42,34,26,18,
+            10,2,59,51,43,35,27,
+            19,11,3,60,52,44,36,
+            63,55,47,39,31,23,15,
+            7,62,54,46,38,30,22,
+            14,6,61,53,45,37,29,
+            21,13,5,28,20,12,4
+        ]
+
+tcp2 = [
+            14, 17,11,24,1,5,3,28,
+            15,6,21,10,23,19,12,4,
+            26,8,16,7,27,20,13,2,
+            41,52,31,37,47,55,30,40,
+            51,45,33,48,44,49,39,56,
+            34,53,46,42,50,36,29,32
+        ]
+
+def E (R):
+    E = [   
+            32,1,2,3,4,5,
+            4,5,6,7,8,9,
+            8,9,10,11,12,13,
+            12,13,14,15,16,17,
+            16,17,18,19,20,21,
+            20,21,22,23,24,25,
+            24,25,26,27,28,29,
+            28,29,30,31,32,1
+        ]
     
-tcp2 = [14, 17,11,24,1,5,3,28,
-        15,6,21,10,23,19,12,4,
-        26,8,16,7,27,20,13,2,
-        41,52,31,37,47,55,30,40,
-        51,45,33,48,44,49,39,56,
-        34,53,46,42,50,36,29,32]
+    for x in range(0,len(E)):
+        i = E[x]
+        E[x] = R[i-1]
+    return E
 
-E = [32,1,2,3,4,5,
-    4,5,6,7,8,9,
-    8,9,10,11,12,13,
-    12,13,14,15,16,17,
-    16,17,18,19,20,21,
-    20,21,22,23,24,25,
-    24,25,26,27,28,29,
-    28,29,30,31,32,1]
+def L_Shift(C, D):
+    Ci = C[1:] + C[:1]
+    Di = D[1:] + D[:1]
+    return Ci, Di
 
-def S (i,C):
+def XOR(A,B):
+    C= ""
+    for i in range (0,len(A)):
+        if A[i] == B[i]:
+            C += str(0)
+        else:
+            C += str(1)
+    return C
+
+def ABin(Sbox):
+    tmp=""
+    for x in Sbox:
+        if len(bin(x)[2:]) < 4:
+            b = bin(x)[2:]
+            for i in range (0,4-len(bin(x)[2:])):
+                b = str(0) + b
+            tmp+=b    
+        else:
+            tmp += bin(x)[2:]
+    return tmp
+
+def S(xor):
+    sbox =[]
+    a = 1
+    b = 5
     S = [
             [
                 [14, 4, 13, 1, 2, 15, 11, 18, 3, 10, 6, 12, 5, 9, 0, 7],
@@ -83,78 +130,59 @@ def S (i,C):
                 [2, 1, 14, 7, 4, 10, 8, 13, 15, 12, 9, 0, 3, 5, 6, 11]
             ]
         ]
-    cadena = ""
-    a = 0
-    b = 6
-    return format(S[0][int(C[0]+C[len(C)-1],2)][int(C[1:5],2)], "b")
+    for x in range (0,8):
+        sbox.append(S[x][int(xor[x*6]+xor[(x+1)*6-1],2)][int(xor[a:b],2)])
+        a+=6
+        b+=6
+    return ABin(sbox)
 
-        
+def P(Sbox):
+    tmp = ""
+    p = [
+            16,	7,	20,	21,	29,	12,	28,	17,
+            1,	15,	23,	26,	5,	18,	31,	10,
+            2,	8,	24,	14,	32,	27,	3,	9,
+            19,	13,	30,	6,	22,	11,	4,	25
+        ]
     
+    for x in range(0,len(p)):
+        i = p[x]
+        p[x] = Sbox[i-1]
 
-def key():
-    key = ""
-    for i in range(0,64):
-        a = random.choices([0,1])
-        key += str(a[0])
-    return key
-Key =  key()
+    for x in p:
+        tmp += str(x)
+    return tmp
 
-def L_Shift(C, D):
-    Ci = C[1:] + C[:1]
-    Di = D[1:] + D[:1]
-    return Ci, Di
-
-def subkey (C, D):
+def Subkey (key): #Funcion que recibe una llave de 56 bits y retorna una subllave de 48
     tmp_tcp2 = tcp2
+    C = key[:28]
+    D = key[28:]
     Ci, Di = L_Shift(C,D)
-    key  =  Ci+Di
+    
+    Key  ==  Ci+Di
+
     for x in range (0, len(tcp2)):
         i = tmp_tcp2[x]
         tmp_tcp2[x] = key[i-1]
-    return tmp_tcp2
+    return tmp_tcp2 #retorna la subllave de 48 bits
 
-for x in range(0,len(tcp1)):
-    i = tcp1[x]
-    tcp1[x] = Key[i-1]
+def F (R, key):
+    subkey = Subkey(key) #subllave de 48b
+    R_e = E(R) #expansion de Ri
+    xor = XOR(R_e, subkey)
+    Sbox = S(xor)
+    f = P(Sbox)
+    return f
 
-C = tcp1[:28]
-D = tcp1[28:]
+tc = "0110100001100101011011000110110001101111001000000111100101101111"
+te = "0110111100100000011110010110111101000010101011001111110000101000"
+Key = '1001001110111011000110010001111111101010001100111010011100001001'
+def DES(t, key):
+    L = t[:32]
+    R = t[32:]
+    f = F(R, key)
+    xor = XOR(L, f)
+    te = R+xor
+    return te
 
-def XOR(A,B):
-    C= []
-    for i in range (0,len(A)):
-        if A[i] == B[i]:
-            C.append(0)
-        else:
-            C.append(1)
-    return C
-
-def expansion_DES(R):
-    tmp_expansion = E
-    for x in range(0,len(E)):
-        i = E[x]
-        tmp_expansion[x] = R[i-1]
-    return tmp_expansion
-
-texto_claro = "0110100001100101011011000110110001101111001000000111100101101111"
-
-L = texto_claro[:32]
-R = texto_claro[32:]
-
-def DES(L, R):
-    
-    k_i = subkey()
-    R_E = expansion_DES(R)
-    xor =  XOR(R_E,k_i)
-    #dividir xor en elementos de 6 bits
-    S1= xor[:6] 
-    S2= xor[:12]
-    S3= xor[12:18]
-    S4= xor[18:24]
-    S5= xor[24:30]
-    S6= xor[30:36]
-    S7= xor[36:42]
-    S8= xor[42:48]
-
-
-    pass
+print(DES(tc,Key))
