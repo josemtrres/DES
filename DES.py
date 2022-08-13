@@ -1,4 +1,4 @@
-# Funcion de expansion
+# Funcion de expansion para la F
 def E (R):
     E = [   
             32,1,2,3,4,5,
@@ -26,7 +26,8 @@ def XOR(A,B):
             C += str(1)
     return C
 
-# Funcion necesaria para obtener binarios de 4 digitos
+# Funcion necesaria para obtener binarios de 4 digitos dado que usar el int, format o bin
+# arroja binarios dependiendo de su longitud, por lo tanto en lugar de obtener 0001 da 1
 def ABin(Sbox):
     tmp=""
     for x in Sbox:
@@ -107,9 +108,8 @@ def S(xor):
         a+=6
         b+=6
     return ABin(sbox)
-    #return sbox
 
-# Funcion de permutación de la Funcion Feistel
+# Funcion de permutación de F
 def P(Sbox):
     tmp = ""
     p = [
@@ -135,53 +135,39 @@ def F (R, key):
     f = P(Sbox) #Hace el shuffle de 32 bits
     return f
 
-# Algoritmo DES
+# Algoritmo DES de encriptacion
 def DES(L, R, key):
     # Se realiza la funcion Feistel
     f = F(R, key)
     R1 = XOR(L, f)
     return R+R1
 
+# Algoritmo DES de desencriptacion
 def SED(L,R, key):
     f = F(L,key)
     L0 = XOR(f,R)
     return L0 + L
 
+def main():
+    a = int(input("Seleccione el proceso que quiere realizar\n 0. Cifrado DES\n 1. Descifrado DES\n"))
 
-#tc = "0110100001100101011011000110110001101111001000000111100101101111"
-#Key = "100100111011101100011001000111111110101000110011"
-
-#te = DES(tc[:32], tc[32:],Key)
-#tcl = SED(te[:32], te[32:], Key)
-
-a = int(input("Seleccione el proceso que quiere realizar\n 0. Cifrado DES\n 1. Descifrado DES\n"))
-
-if a < 0 or a > 2:
-    raise Exception("No hay datos correspondientes")
-else:
     if a == 0:
         texto = str(input("Inserte la cadena de 64 bits a cifrar\n"))
         if len(texto) < 64 or len(texto) > 64:
             raise Exception("Ingrese 64 bits")
-        elif '1' not in texto or '0' not in texto:
-            raise Exception("Ingrese unicamente cadenas de bits (1's o 0's)")
         clave = str(input("Inserte la llave de 48 bits para cifrar\n"))
         if len(clave) < 48 or len(clave) > 48:
             raise Exception("Ingrese 48 bits")
-        elif '1' not in clave or '0' not in clave:
-            raise Exception("Ingrese unicamente cadenas de bits (1's o 0's)")
         print("El texto cifrado es: ",DES(texto[:32], texto[32:],clave))
-    else:
+    elif a == 1:
         texto = str(input("Inserte la cadena de 64 bits a descifrar\n"))
         if len(texto) < 64 or len(texto) > 64:
             raise Exception("Ingrese 64 bits")
-        elif '1' not in texto or '0' not in texto:
-            raise Exception("Ingrese unicamente cadenas de bits (1's o 0's)")
         clave = str(input("Inserte la llave de 48 bits para descifrar\n"))
         if len(clave) < 48 or len(clave) > 48:
             raise Exception("Ingrese 48 bits")
-        elif '1' not in clave or '0' not in clave:
-            raise Exception("Ingrese unicamente cadenas de bits (1's o 0's)")
         print("El texto claro es: ", SED(texto[:32], texto[32:], clave))
+    else:
+        raise Exception("Digite un número valido")
 
-
+main()
